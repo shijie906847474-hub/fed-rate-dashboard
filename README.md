@@ -24,14 +24,11 @@ npm run dev
 
 ## 部署到 Vercel
 
-1. 将代码推送到 GitHub
-2. 使用 Google 账号登录 [Vercel](https://vercel.com)
-3. Import 项目 → 配置环境变量：
-   - `FRED_API_KEY`
-   - `FEDWATCH_PROVIDER=calculated`
-4. Deploy
+**当前生产地址：** https://workdata-opal.vercel.app
 
-部署完成后获得 `https://your-project.vercel.app` 公网地址，手机可直接访问。
+已通过 CLI 部署至 Vercel 项目 [`shijie47/work_data`](https://vercel.com/shijie47/work_data)，环境变量已配置。手机浏览器可直接访问上述地址。
+
+如需绑定 GitHub 实现自动部署，见下方「推送到 GitHub」章节。
 
 ## 后期切换 CME 官方 API
 
@@ -47,3 +44,21 @@ npm run dev
 - **宏观指标**：FRED（圣路易斯联储）
 
 > 免责声明：数据仅供参考，不构成投资建议。
+
+## 推送到 GitHub（需可访问 GitHub 的网络）
+
+当前环境无法直连 GitHub，请在 VPN 可用时执行：
+
+```bash
+gh auth login -h github.com -p https -w
+gh repo create fed-rate-dashboard --public --source=. --remote=origin --push
+```
+
+或在 GitHub 网页新建仓库 `fed-rate-dashboard` 后：
+
+```bash
+git remote add origin https://github.com/<你的用户名>/fed-rate-dashboard.git
+git push -u origin master
+```
+
+然后在 [Vercel Dashboard](https://vercel.com/shijie47/work_data/settings/git) 绑定该 GitHub 仓库，即可实现 push 自动部署。
