@@ -26,9 +26,9 @@ npm run dev
 
 **当前生产地址：** https://workdata-opal.vercel.app
 
-已通过 CLI 部署至 Vercel 项目 [`shijie47/work_data`](https://vercel.com/shijie47/work_data)，环境变量已配置。手机浏览器可直接访问上述地址。
+**GitHub 仓库：** https://github.com/shijie906847474-hub/fed-rate-dashboard
 
-如需绑定 GitHub 实现自动部署，见下方「推送到 GitHub」章节。
+已通过 CLI 部署至 Vercel 项目 [`shijie47/work_data`](https://vercel.com/shijie47/work_data)，环境变量已配置，并已绑定 GitHub 仓库实现自动部署。手机浏览器可直接访问上述地址。
 
 ## 后期切换 CME 官方 API
 
