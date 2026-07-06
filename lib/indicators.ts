@@ -1,4 +1,4 @@
-import { INDICATORS } from "./constants";
+import { INDICATORS, INDICATOR_HISTORY_MONTHS } from "./constants";
 import {
   computeChange,
   fetchSeriesObservations,
@@ -66,7 +66,8 @@ export async function getIndicatorHistory(
   }
 
   return fetchSeriesObservations(seriesId, {
-    observationStart: monthsAgo(24),
+    observationStart: monthsAgo(INDICATOR_HISTORY_MONTHS),
     units: indicator.transform,
+    sortOrder: "asc",
   });
 }

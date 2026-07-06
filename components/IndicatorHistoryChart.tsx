@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import {
   createChart,
   type IChartApi,
@@ -8,6 +8,27 @@ import {
   ColorType,
   AreaSeries,
 } from "lightweight-charts";
+
+function fitChartToData(chart: IChartApi, width: number, pointCount: number) {
+  if (pointCount <= 0) return;
+
+  const horizontalPadding = 24;
+  const barSpacing =
+    pointCount <= 1
+      ? 8
+      : Math.max(2, Math.min(14, (width - horizontalPadding * 2) / pointCount));
+
+  chart.applyOptions({
+    timeScale: {
+      barSpacing,
+      fixLeftEdge: true,
+      fixRightEdge: true,
+      lockVisibleTimeRangeOnResize: true,
+      rightOffset: 0,
+    },
+  });
+  chart.timeScale().fitContent();
+}
 
 export function IndicatorHistoryChart({
   points,
@@ -19,6 +40,26 @@ export function IndicatorHistoryChart({
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Area"> | null>(null);
+  const pointsRef = useRef(points);
+
+  pointsRef.current = points;
+
+  const syncChartData = useCallback(() => {
+    const chart = chartRef.current;
+    const series = seriesRef.current;
+    const container = containerRef.current;
+    const currentPoints = pointsRef.current;
+
+    if (!chart || !series || !container || !currentPoints.length) return;
+
+    series.setData(
+      currentPoints.map((point) => ({
+        time: point.date,
+        value: point.value,
+      })),
+    );
+    fitChartToData(chart, container.clientWidth, currentPoints.length);
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,6 +78,16 @@ export function IndicatorHistoryChart({
       },
       timeScale: {
         borderColor: "rgba(255,255,255,0.08)",
+        fixLeftEdge: true,
+        fixRightEdge: true,
+        lockVisibleTimeRangeOnResize: true,
+        rightOffset: 0,
+      },
+      handleScroll: false,
+      handleScale: false,
+      kineticScroll: {
+        touch: false,
+        mouse: false,
       },
       height,
     });
@@ -53,11 +104,13 @@ export function IndicatorHistoryChart({
 
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
-      if (entry) {
-        chart.applyOptions({ width: entry.contentRect.width });
-      }
+      if (!entry) return;
+      chart.applyOptions({ width: entry.contentRect.width });
+      fitChartToData(chart, entry.contentRect.width, pointsRef.current.length);
     });
     resizeObserver.observe(containerRef.current);
+
+    syncChartData();
 
     return () => {
       resizeObserver.disconnect();
@@ -65,19 +118,11 @@ export function IndicatorHistoryChart({
       chartRef.current = null;
       seriesRef.current = null;
     };
-  }, [height]);
+  }, [height, syncChartData]);
 
   useEffect(() => {
-    if (!seriesRef.current || !points.length) return;
-
-    seriesRef.current.setData(
-      points.map((point) => ({
-        time: point.date,
-        value: point.value,
-      })),
-    );
-    chartRef.current?.timeScale().fitContent();
-  }, [points]);
+    syncChartData();
+  }, [points, syncChartData]);
 
   if (!points.length) {
     return (

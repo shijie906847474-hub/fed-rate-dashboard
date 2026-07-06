@@ -1,6 +1,6 @@
 "use client";
 
-import { INDICATORS } from "@/lib/constants";
+import { INDICATORS, INDICATOR_HISTORY_MONTHS } from "@/lib/constants";
 import type { IndicatorSnapshot } from "@/lib/providers/types";
 import { IndicatorHistoryChart } from "./IndicatorHistoryChart";
 
@@ -40,7 +40,9 @@ export function IndicatorPanels({
     <section className="space-y-6">
       <div>
         <h3 className="text-lg font-semibold text-zinc-100">关键宏观指标</h3>
-        <p className="text-sm text-zinc-500">向下浏览查看各指标最新值与 24 个月历史走势</p>
+        <p className="text-sm text-zinc-500">
+          向下浏览查看各指标最新值与近 {INDICATOR_HISTORY_MONTHS} 个月历史走势
+        </p>
       </div>
 
       <div className="space-y-6">
@@ -91,7 +93,7 @@ export function IndicatorPanels({
 
               <div className="p-4 sm:p-6">
                 <p className="mb-3 text-xs uppercase tracking-[0.2em] text-zinc-500">
-                  历史走势 · 近 24 个月
+                  历史走势 · 近 {INDICATOR_HISTORY_MONTHS} 个月
                 </p>
                 <IndicatorHistoryChart points={history?.points ?? []} />
               </div>

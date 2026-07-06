@@ -31,6 +31,8 @@ export const INDICATORS = [
 
 export type IndicatorId = (typeof INDICATORS)[number]["id"];
 
+export const INDICATOR_HISTORY_MONTHS = 60;
+
 export const CACHE_TTL = {
   fedwatch: 15 * 60 * 1000,
   indicators: 60 * 60 * 1000,
