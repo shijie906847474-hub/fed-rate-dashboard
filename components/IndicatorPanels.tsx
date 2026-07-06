@@ -59,15 +59,32 @@ export function IndicatorPanels({
               className="overflow-hidden rounded-3xl border border-zinc-800 bg-zinc-950/70"
             >
               <div className="border-b border-zinc-800 p-4 sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    <p className="text-base font-medium text-zinc-100">{meta.nameZh}</p>
-                    <p className="text-sm text-zinc-500">
-                      {meta.nameEn} · {meta.unit}
-                    </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div>
+                      <p className="text-base font-medium text-zinc-100">{meta.nameZh}</p>
+                      <p className="text-sm text-zinc-500">
+                        {meta.nameEn} · {meta.unit}
+                      </p>
+                    </div>
+
+                    <p className="max-w-xl text-sm leading-6 text-zinc-400">{meta.description}</p>
+
+                    <div className="space-y-1.5 rounded-xl border border-zinc-800/80 bg-zinc-900/40 px-3 py-2.5 text-xs leading-5 text-zinc-500">
+                      <p>
+                        <span className="text-rose-400">↑ 上升</span>
+                        <span className="text-zinc-600"> · </span>
+                        {meta.fedImpactUp}
+                      </p>
+                      <p>
+                        <span className="text-emerald-400">↓ 下降</span>
+                        <span className="text-zinc-600"> · </span>
+                        {meta.fedImpactDown}
+                      </p>
+                    </div>
                   </div>
 
-                  <div className="sm:text-right">
+                  <div className="shrink-0 sm:text-right">
                     <p className="font-mono text-4xl text-zinc-50 sm:text-5xl">
                       {indicator ? formatValue(indicator) : "—"}
                     </p>
