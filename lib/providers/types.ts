@@ -9,6 +9,7 @@ export interface FedWatchData {
   history: { date: string; hike: number; hold: number; cut: number }[];
   source: FedWatchSource;
   updatedAt: string;
+  dataMethod?: "quikstrike" | "settlements" | "fallback";
   stale?: boolean;
   degradedReason?: string;
 }

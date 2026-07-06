@@ -1,3 +1,4 @@
+import { fetchFedWatchFromHtml, summarizeHtmlProbabilities } from "../cme-fedwatch-html";
 import { fetchRecentSettlementDays, fetchSettlements } from "../cme-settlements";
 import {
   calculateProbabilities,
@@ -34,10 +35,42 @@ function buildDegradedData(
     ],
     history: [],
     source: "calculated",
+    dataMethod: "fallback",
     updatedAt: new Date().toISOString(),
     stale: true,
     degradedReason: reason,
   };
+}
+
+async function buildHistory(
+  nextMeeting: Date,
+  effr: number,
+  lower: number,
+  upper: number,
+): Promise<FedWatchData["history"]> {
+  try {
+    const recentDays = await fetchWithTimeout(
+      fetchRecentSettlementDays(5),
+      15000,
+      "CME recent settlements",
+    );
+
+    return recentDays.flatMap(({ tradeDate, settlements: daySettlements }) => {
+      const result = calculateProbabilities(daySettlements, [nextMeeting], effr)[0];
+      if (!result) return [];
+      const daySummary = summarizeOutcomeProbabilities(result.probabilities, lower, upper);
+      return [
+        {
+          date: tradeDate,
+          hike: daySummary.hike,
+          hold: daySummary.hold,
+          cut: daySummary.cut,
+        },
+      ];
+    });
+  } catch {
+    return [];
+  }
 }
 
 export class CalculatedFedWatchProvider implements FedWatchProvider {
@@ -57,74 +90,80 @@ export class CalculatedFedWatchProvider implements FedWatchProvider {
       [lower, upper] = deriveTargetRange(effr);
     }
 
-    let settlements;
-    let recentDays: Awaited<ReturnType<typeof fetchRecentSettlementDays>> = [];
+    try {
+      const htmlData = await fetchWithTimeout(
+        fetchFedWatchFromHtml(),
+        15000,
+        "FedWatch HTML",
+      );
+      const summary = summarizeHtmlProbabilities(
+        htmlData.rateRanges,
+        Math.round(htmlData.currentTarget.lower * 100),
+      );
+
+      return {
+        nextMeeting: {
+          date: toIsoDate(nextMeeting),
+          daysRemaining: daysUntil(nextMeeting),
+        },
+        currentRate: effr,
+        targetRange: htmlData.currentTarget,
+        probabilities: {
+          hike: summary.hike,
+          hold: summary.hold,
+          cut: summary.cut,
+        },
+        rateRanges: summary.rateRanges,
+        history: [],
+        source: "calculated",
+        dataMethod: "quikstrike",
+        updatedAt: htmlData.updatedAt,
+      };
+    } catch {
+      // Fall through to settlements-based calculation.
+    }
 
     try {
-      settlements = await fetchWithTimeout(fetchSettlements(), 12000, "CME settlements");
-      recentDays = await fetchWithTimeout(
-        fetchRecentSettlementDays(5),
-        20000,
-        "CME recent settlements",
-      );
+      const settlements = await fetchWithTimeout(fetchSettlements(), 12000, "CME settlements");
+      const meetingResults = calculateProbabilities(settlements, [nextMeeting], effr);
+      const latest = meetingResults[0];
+
+      if (!latest) {
+        throw new Error("Unable to calculate probabilities from settlements");
+      }
+
+      const summary = summarizeOutcomeProbabilities(latest.probabilities, lower, upper);
+      const history = await buildHistory(nextMeeting, effr, lower, upper);
+
+      return {
+        nextMeeting: {
+          date: toIsoDate(nextMeeting),
+          daysRemaining: daysUntil(nextMeeting),
+        },
+        currentRate: effr,
+        targetRange: { lower, upper },
+        probabilities: {
+          hike: summary.hike,
+          hold: summary.hold,
+          cut: summary.cut,
+        },
+        rateRanges: summary.rateRanges,
+        history,
+        source: "calculated",
+        dataMethod: "settlements",
+        updatedAt: new Date().toISOString(),
+      };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "CME 结算价数据暂不可用";
+        error instanceof Error ? error.message : "CME 数据暂不可用";
       return buildDegradedData(
         nextMeeting,
         effr,
         lower,
         upper,
-        `${message}。当前显示基于 FRED 的估算值，部署至 Vercel 后通常可恢复实时 CME 数据。`,
+        `${message}。CME 结算价接口返回 403 时，已尝试 QuikStrike 公开页面但仍失败，当前显示 FRED 估算值。`,
       );
     }
-
-    const meetingResults = calculateProbabilities(settlements, [nextMeeting], effr);
-    const latest = meetingResults[0];
-
-    if (!latest) {
-      return buildDegradedData(
-        nextMeeting,
-        effr,
-        lower,
-        upper,
-        "无法根据 CME 结算价计算概率，已切换为估算值。",
-      );
-    }
-
-    const summary = summarizeOutcomeProbabilities(latest.probabilities, lower, upper);
-
-    const history = recentDays.flatMap(({ tradeDate, settlements: daySettlements }) => {
-      const result = calculateProbabilities(daySettlements, [nextMeeting], effr)[0];
-      if (!result) return [];
-      const daySummary = summarizeOutcomeProbabilities(result.probabilities, lower, upper);
-      return [
-        {
-          date: tradeDate,
-          hike: daySummary.hike,
-          hold: daySummary.hold,
-          cut: daySummary.cut,
-        },
-      ];
-    });
-
-    return {
-      nextMeeting: {
-        date: toIsoDate(nextMeeting),
-        daysRemaining: daysUntil(nextMeeting),
-      },
-      currentRate: effr,
-      targetRange: { lower, upper },
-      probabilities: {
-        hike: summary.hike,
-        hold: summary.hold,
-        cut: summary.cut,
-      },
-      rateRanges: summary.rateRanges,
-      history,
-      source: "calculated",
-      updatedAt: new Date().toISOString(),
-    };
   }
 }
 

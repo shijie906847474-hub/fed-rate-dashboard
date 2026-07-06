@@ -2,14 +2,16 @@
 
 import type { FedWatchData } from "@/lib/providers/types";
 
-export function DataSourceBadge({ data }: { data: FedWatchData }) {
-  const sourceLabel =
-    data.source === "official"
-      ? "CME FedWatch 官方 API"
-      : data.source === "calculated"
-        ? "Calculated（CME 结算价 + FRED）"
-        : "Mock 数据";
+function getSourceLabel(data: FedWatchData): string {
+  if (data.source === "official") return "CME FedWatch 官方 API";
+  if (data.source === "mock") return "Mock 数据";
+  if (data.dataMethod === "quikstrike") return "CME FedWatch 公开数据（QuikStrike）";
+  if (data.dataMethod === "settlements") return "Calculated（CME 结算价 + FRED）";
+  if (data.dataMethod === "fallback") return "FRED 估算值（CME 数据不可用）";
+  return "Calculated（CME + FRED）";
+}
 
+export function DataSourceBadge({ data }: { data: FedWatchData }) {
   const updated = new Date(data.updatedAt).toLocaleString("zh-CN", {
     hour12: false,
   });
@@ -22,11 +24,11 @@ export function DataSourceBadge({ data }: { data: FedWatchData }) {
             "数据可能延迟，正在显示最近一次成功获取的结果。"}
         </p>
       )}
-      <p>数据来源：{sourceLabel} · FRED（圣路易斯联储）</p>
+      <p>数据来源：{getSourceLabel(data)} · FRED（圣路易斯联储）</p>
       <p>最后更新：{updated}</p>
       <p>
         本页面数据仅供参考，不构成投资建议。Calculated
-        模式下的概率为基于公开数据的近似计算，可能与 CME FedWatch 官方值存在差异。
+        模式下的概率来自 CME 公开页面或结算价近似计算，可能与 CME FedWatch 官方 QuikStrike 值存在细微差异。
       </p>
     </footer>
   );
